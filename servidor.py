@@ -1,6 +1,34 @@
 from flask import Flask, request, jsonify
+from functools import wraps
 
 app = Flask(__name__)
+
+TOKEN_VALIDO = "segredo-da-turma-123"
+
+def requer_token(funcao):
+
+    @wraps(funcao)
+
+    def envoltorio(*args, **kwargs):
+
+        cabecalho = request.headers.get("Authorization", "")
+
+        if not cabecalho.startswith("Bearer "):
+            return jsonify({"erro":"token ausente"}),401
+        
+        token = cabecalho.split(" ", 1)[1]
+
+        if token != TOKEN_VALIDO:
+            return jsonify({"erro": "token invalido"}), 401
+        
+        return funcao(*args,**kwargs)
+    return envoltorio
+
+@app.route("/api/protegido",methods=["GET"])
+@requer_token
+
+def protegido():
+    return jsonify({"mensagem":"Acesso autorizado! Dados secretos aqui."})
 
 @app.route("/api/soma", methods=["GET"])
 
@@ -32,3 +60,5 @@ def soma_post():
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug= True)
+
+    
